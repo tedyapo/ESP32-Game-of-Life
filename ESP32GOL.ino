@@ -81,7 +81,7 @@ void drawFrame() {
 
 // wrap val so that it lies inside [0, size-1],
 //   allowing negative values down to -size
-inline byte wrap(byte val, byte size)
+inline int8_t wrap(int8_t val, int8_t size)
 {
   return (val + size) % size;
 }
