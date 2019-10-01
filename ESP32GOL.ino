@@ -79,37 +79,45 @@ void drawFrame() {
   delay(350);
 }
 
+// wrap val so that it lies inside [0, size-1],
+//   allowing negative values down to -size
+inline byte wrap(byte val, byte size)
+{
+  return (val + size) % size;
+}
+
 void loop() {
   if (step_GOL == 120) { // This if reboot the world after 60 generation to avoid static world
     step_GOL = 0;
     initializeWorld();
   }
+
   //This double "for" is used to update the world to the next generation
   //The buffer state is written on the EEPROM Memory
-
   for (byte i = 0; i < 16; i++) {
     for (byte j = 0; j < 32; j++) {
 
-      if (i == 0 || i == 15 || j == 0 || j == 31) // I choose to keep the border at 0
-      {
-        WORLD2[i][j] = 0;
+      byte num_alive = (WORLD[wrap(i - 1, 16)][wrap(j - 1, 32)] +
+                        WORLD[wrap(i - 1, 16)][j] +
+                        WORLD[wrap(i - 1, 16)][wrap(j + 1, 32)] +
+                        WORLD[i][wrap(j - 1, 32)] +
+                        WORLD[i][wrap(j + 1, 32)] +
+                        WORLD[wrap(i + 1, 16)][wrap(j - 1, 32)] +
+                        WORLD[wrap(i + 1, 16)][j] +
+                        WORLD[wrap(i + 1, 16)][wrap(j + 1, 32)]);
+      bool state = WORLD[i][j];
+      
+      //RULE#1 if you are surrounded by 3 cells --> you live
+      if (num_alive == 3) {
+        WORLD2[i][j] = 1;
       }
+      //RULE#2 if you are surrounded by 2 cells --> you stay in your state
+      else if (num_alive == 2) {
+        WORLD2[i][j] = state;
+      }
+      //RULE#3 otherwise you die from overpopulation or subpopulation
       else {
-        byte num_alive = WORLD[i - 1][j - 1] + WORLD[i - 1][j] + WORLD[i - 1][j + 1] + WORLD[i][j - 1] + WORLD[i][j + 1] + WORLD[i + 1][j - 1] + WORLD[i + 1][j] + WORLD[i + 1][j + 1];
-        bool state = WORLD[i][j];
-
-        //RULE#1 if you are surrounded by 3 cells --> you live
-        if (num_alive == 3) {
-          WORLD2[i][j] = 1;
-        }
-        //RULE#2 if you are surrounded by 2 cells --> you stay in your state
-        else if (num_alive == 2) {
-          WORLD2[i][j] = state;
-        }
-        //RULE#3 otherwise you die from overpopulation or subpopulation
-        else {
-          WORLD2[i][j] = 0;
-        }
+        WORLD2[i][j] = 0;
       }
     }
   }
